@@ -22,10 +22,6 @@ def to_png_bytes(img_u8):
 
 
 def _get_time_ms(method_dict: Dict[str, Any]) -> Optional[float]:
-    """
-    Tries common keys for runtime; returns milliseconds if possible.
-    Supports: time_ms, runtime_ms, elapsed_ms, time_sec, runtime_sec, elapsed_sec
-    """
     for k in ("time_ms", "runtime_ms", "elapsed_ms"):
         if k in method_dict and method_dict[k] is not None:
             return float(method_dict[k])
@@ -62,7 +58,7 @@ if uploaded is not None:
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     tmp.write(uploaded.getbuffer())
     tmp.flush()
-    tmp.close()  # important on Windows
+    tmp.close()
     image_path = Path(tmp.name)
 elif use_sample and Path("baboon.png").exists():
     image_path = Path("baboon.png")
@@ -159,10 +155,50 @@ with right:
         st.warning("Set parameters in the sidebar and click **Run** to generate results.")
         st.stop()
 
-    methods = result["metrics"].get("methods", {})
-    mean_info = methods.get("mean", {})
-    nlm_info = methods.get("nlm", {})
+    methods_raw = result["metrics"].get("methods", {})
 
+    # Normalize methods to a dict { "mean": {...}, "nlm": {...} }
+    if isinstance(methods_raw, list):
+        methods = {}
+        for item in methods_raw:
+            if not isinstance(item, dict):
+                continue
+            key = (
+                    item.get("name")
+                    or item.get("method")
+                    or item.get("algo")
+                    or item.get("filter")
+            )
+            if key is None:
+                continue
+            methods[str(key).lower()] = item
+
+        # fallback: if list has 2 dicts and no name keys, map by order
+        if not methods and len(methods_raw) >= 2 and all(isinstance(x, dict) for x in methods_raw[:2]):
+            methods = {"mean": methods_raw[0], "nlm": methods_raw[1]}
+
+    elif isinstance(methods_raw, dict):
+        # make keys lowercase for easier matching
+        methods = {str(k).lower(): v for k, v in methods_raw.items()}
+    else:
+        methods = {}
+
+
+    # pick mean/nlm robustly even if keys are like "mean_3x3" or "fastnlmeans"
+    def pick(methods_dict, target: str):
+        if target in methods_dict:
+            return methods_dict[target]
+        # try fuzzy match
+        for k, v in methods_dict.items():
+            if target == "mean" and "mean" in k:
+                return v
+            if target == "nlm" and ("nlm" in k or "non" in k or "fast" in k):
+                return v
+        return {}
+
+
+    mean_info = pick(methods, "mean")
+    nlm_info = pick(methods, "nlm")
     # Runtime cards
     t1, t2 = st.columns(2)
     t1.metric("Mean runtime", fmt_ms(_get_time_ms(mean_info)))
@@ -187,7 +223,9 @@ with right:
     # Images
     c1, c2, c3 = st.columns(3)
     c1.image(result["noisy"], caption="Noisy", clamp=True)
-    c2.image(result["mean"], caption=f"Mean {int(result['metrics']['params']['mean_kernel'])}×{int(result['metrics']['params']['mean_kernel'])}", clamp=True)
+    c2.image(result["mean"],
+             caption=f"Mean {int(result['metrics']['params']['mean_kernel'])}×{int(result['metrics']['params']['mean_kernel'])}",
+             clamp=True)
     c3.image(result["nlm"], caption="NLM", clamp=True)
 
     # Downloads
