@@ -11,14 +11,17 @@ class NoiseParams:
     seed: int | None = None
 
 
-def add_gaussian_noise_u8(image_u8: np.ndarray, params: NoiseParams) -> np.ndarray:
-    if image_u8.dtype != np.uint8:
-        raise TypeError("image_u8 must be uint8")
+def add_gaussian_noise_u8(img_u8: np.ndarray, params) -> np.ndarray:
+    seed = int(params.seed)
+    if seed < 0:
+        raise ValueError("seed must be a non-negative integer (>= 0)")
+    if float(params.var) < 0:
+        raise ValueError("variance must be non-negative (>= 0)")
 
-    rng = np.random.default_rng(params.seed)
-    sigma = float(np.sqrt(params.var))
-    noise = rng.normal(loc=params.mean, scale=sigma, size=image_u8.shape).astype(np.float32)
+    rng = np.random.default_rng(seed)
+    sigma = np.sqrt(float(params.var))
 
-    noisy = image_u8.astype(np.float32) + noise
-    noisy = np.clip(noisy, 0, 255).astype(np.uint8)
-    return noisy
+    noise = rng.normal(loc=float(params.mean), scale=sigma, size=img_u8.shape)
+    out = img_u8.astype(np.float32) + noise
+    out = np.clip(out, 0, 255).astype(np.uint8)
+    return out
