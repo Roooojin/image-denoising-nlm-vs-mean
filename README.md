@@ -31,6 +31,8 @@ Where:
 
 This repo uses OpenCV’s optimized implementation: `cv2.fastNlMeansDenoising`.
 
+
+
 ## Install
 
 ```bash
@@ -40,11 +42,28 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 ```
+### install package (recommended for src layout)
+```bash
+pip install -e .
+```
+## 🖥️ GUI (Streamlit)
+
+This project includes an interactive **Streamlit** web UI:
+- Upload your own image (PNG/JPG)
+- Add Gaussian noise (mean/variance + seed)
+- Denoise using **Mean 3×3** and **Non-Local Means (NLM)**
+- Compare **MSE / PSNR** and runtime
+- Download `metrics.json`
+
+## run the UI
+```bash
+streamlit run app.py
+```
 
 ## Run (CLI)
 
 ```bash
-python -m denoise_nlm.run --image path/to/Baboon.jpg --out outputs
+python -m denoise_nlm.run --image path/to/Baboon.png --out outputs
 ```
 
 Options (examples):
