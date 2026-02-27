@@ -1,6 +1,6 @@
 # NLM Denoising (Spatial Domain) — Mean 3×3 vs Non-Local Means
 
-This repo implements **Exercise 2** from the *“Chapter 3: Spatial Domain Image Enhancement”* handout:
+This repo implements Spatial Domain Image Enhancement handout:
 - Convert `Baboon.jpg` to grayscale
 - Add **Gaussian noise** with **mean = 0** and **variance = 5**
 - Denoise using:
@@ -76,6 +76,4 @@ The script will save:
   For variance = 5 → `sigma = sqrt(5) ≈ 2.236`.
 - `PSNR` is computed with `MAX=255`.
 
-## License
 
-MIT
